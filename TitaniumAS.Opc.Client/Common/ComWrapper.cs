@@ -36,8 +36,10 @@ namespace TitaniumAS.Opc.Client.Common
             try
             {
                 Log.Trace(m => m("Calling '{0}' Object: {1} {2}", methodName, comObject.GetHashCode(),ArgumentsToString(arguments)));
+                Log.DebugFormat("Starting COM operation: {0} on object {1}", methodName, comObject.GetHashCode());
                 var result = comAction();
                 Log.Trace(m => m("Success: '{0}' Object: {1} result: {2}", methodName, comObject.GetHashCode(),ResultToString(result)));
+                Log.DebugFormat("COM operation successful: {0} on object {1}", methodName, comObject.GetHashCode());
                 return result;
             }
             catch (InvalidCastException ex) //workaround for correct Com.QueryInterface calls

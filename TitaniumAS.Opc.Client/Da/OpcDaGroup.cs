@@ -89,10 +89,12 @@ namespace TitaniumAS.Opc.Client.Da
         /// </returns>
         public Task<OpcDaItemValue[]> ReadAsync(IList<OpcDaItem> items, CancellationToken token)
         {
+            Log.DebugFormat("Starting async read for group '{0}' with {1} items", Name, items.Count);
             CheckSupported(OpcDaGroupFeatures.ReadAsync);
             CheckItems(items);
             var request = new ReadAsyncRequest(As<OpcAsyncIO2>());
             _asyncRequestManager.AddRequest(request);
+            Log.TraceFormat("Async read request created for group '{0}'", Name);
             return request.Start(items, token);
         }
 
@@ -285,11 +287,13 @@ namespace TitaniumAS.Opc.Client.Da
         public Task<HRESULT[]> WriteAsync(IList<OpcDaItem> items, IList<object> values,
             CancellationToken token)
         {
+            Log.DebugFormat("Starting async write for group '{0}' with {1} items", Name, items.Count);
             CheckItems(items);
             CheckSupported(OpcDaGroupFeatures.WriteAsync);
 
             var request = new WriteAsyncRequest(As<OpcAsyncIO2>());
             _asyncRequestManager.AddRequest(request);
+            Log.TraceFormat("Async write request created for group '{0}'", Name);
             return request.Start(items, values, token);
         }
 
@@ -502,6 +506,7 @@ namespace TitaniumAS.Opc.Client.Da
         /// </returns>
         public OpcDaItemValue[] Read(IList<OpcDaItem> items, OpcDaDataSource dataSource = OpcDaDataSource.Cache)
         {
+            Log.DebugFormat("Starting sync read for group '{0}' with {1} items from {2}", Name, items.Count, dataSource);
             CheckItems(items);  
             CheckSupported(OpcDaGroupFeatures.Read);
             int[] serverHandles = ArrayHelpers.GetServerHandles(items);
@@ -509,6 +514,7 @@ namespace TitaniumAS.Opc.Client.Da
             HRESULT[] ppErrors;
             OPCITEMSTATE[] ppItemValues = As<OpcSyncIO>().Read((OPCDATASOURCE) dataSource, serverHandles, out ppErrors);
             OpcDaItemValue[] result = OpcDaItemValue.Create(this, ppItemValues, ppErrors);
+            Log.TraceFormat("Sync read completed for group '{0}' - {1} values returned", Name, result.Length);
             OnValuesChanged(new OpcDaItemValuesChangedEventArgs(result));
             return result;
         }
@@ -523,10 +529,13 @@ namespace TitaniumAS.Opc.Client.Da
         /// </returns>
         public HRESULT[] Write(IList<OpcDaItem> items, object[] values)
         {
+            Log.DebugFormat("Starting sync write for group '{0}' with {1} items", Name, items.Count);
             CheckItems(items);
             CheckSupported(OpcDaGroupFeatures.Write);
             int[] serverHandles = ArrayHelpers.GetServerHandles(items);
-            return As<OpcSyncIO>().Write(serverHandles, values);
+            HRESULT[] result = As<OpcSyncIO>().Write(serverHandles, values);
+            Log.TraceFormat("Sync write completed for group '{0}' - {1} results", Name, result.Length);
+            return result;
         }
 
         /// <summary>

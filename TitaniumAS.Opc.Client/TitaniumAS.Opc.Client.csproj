@@ -218,9 +218,14 @@
     <Compile Include="Common\RpcFailedEventArgs.cs" />
     <Compile Include="Interop\Helpers\TypeConverter.cs" />
     <Compile Include="Bootstrap.cs" />
+    <Compile Include="Logging\CollectorOPCLogger.cs" />
+    <Compile Include="Logging\CollectorOPCLoggerFactoryAdapter.cs" />
+    <Compile Include="Logging\ILoggingProvider.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="App.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />

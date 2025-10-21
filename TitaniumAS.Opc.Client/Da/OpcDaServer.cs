@@ -130,15 +130,18 @@ namespace TitaniumAS.Opc.Client.Da
       _shutdownConnectionPoint.TryConnect(ComObject);
 
       Log.TraceFormat("Connected to '{0}' opc server.", Uri);
+      Log.InfoFormat("OPC Server connection established: {0} | Client: {1}", Uri, _clientName);
       try
       {
         ClientName = _clientName;
+        Log.DebugFormat("Client name set to: {0}", _clientName);
       }
       catch (Exception ex)
       {
         Log.Warn("Cannot setup name of client.", ex);
       }
       OnConnectionStateChanged(true);
+      Log.DebugFormat("Connection state changed event fired for server: {0}", Uri);
     }
 
     /// <summary>
@@ -431,8 +434,10 @@ namespace TitaniumAS.Opc.Client.Da
     private void OnRpcFailed(object sender, RpcFailedEventArgs args)
     {
       if (args.UserData != this) return;
+      Log.WarnFormat("RPC failed for server '{0}': {1}", Uri, args.Error);
       try
       {
+        Log.DebugFormat("Attempting disconnect due to RPC failure for server: {0}", Uri);
         DisconnectImpl(true);
       }
       catch (Exception ex)
@@ -441,6 +446,7 @@ namespace TitaniumAS.Opc.Client.Da
       }
       try
       {
+        Log.InfoFormat("Triggering shutdown event for server '{0}' due to RPC failure", Uri);
         OnShutdown(new OpcShutdownEventArgs("RPC failed", args.Error));
       }
       catch (Exception ex)
@@ -451,8 +457,10 @@ namespace TitaniumAS.Opc.Client.Da
 
     private void OnShutdown(object sender, OpcShutdownEventArgs args)
     {
+      Log.InfoFormat("Server shutdown initiated for '{0}': {1}", Uri, args.Reason);
       try
       {
+        Log.DebugFormat("Disconnecting server '{0}' due to shutdown", Uri);
         DisconnectImpl();
       }
       catch (Exception ex)
@@ -462,6 +470,7 @@ namespace TitaniumAS.Opc.Client.Da
 
       try
       {
+        Log.DebugFormat("Firing shutdown event for server '{0}'", Uri);
         OnShutdown(new OpcShutdownEventArgs(args.Reason, args.Error));
       }
       catch (Exception ex)

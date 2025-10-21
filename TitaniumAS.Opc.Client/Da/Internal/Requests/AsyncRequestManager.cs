@@ -81,8 +81,10 @@ namespace TitaniumAS.Opc.Client.Da.Internal.Requests
                 if (request.TransactionId != dwTransid)
                     throw new ArgumentException("Wrong transaction id.", "dwTransid");
 
+                Log.DebugFormat("Processing data change for transaction {0} with {1} values", dwTransid, values.Length);
                 request.OnDataChange(dwTransid, hGroup, hrMasterquality, hrMastererror, values);
                 OnNewItemValues(values);
+                Log.TraceFormat("Data change completed for transaction {0}", dwTransid);
             }
             catch (Exception ex)
             {
@@ -112,8 +114,10 @@ namespace TitaniumAS.Opc.Client.Da.Internal.Requests
                 OpcDaItemValue[] values = OpcDaItemValue.Create(_opcDaGroup, dwCount, phClientItems, pvValues,
                     pwQualities,
                     pftTimeStamps, pErrors);
+                Log.DebugFormat("Read complete for transaction {0} with {1} values", dwTransid, values.Length);
                 request.OnReadComplete(dwTransid, hGroup, hrMasterquality, hrMastererror, values);
                 OnNewItemValues(values);
+                Log.TraceFormat("Read complete processing finished for transaction {0}", dwTransid);
             }
             catch (Exception ex)
             {
@@ -135,7 +139,9 @@ namespace TitaniumAS.Opc.Client.Da.Internal.Requests
                 if (request.TransactionId != dwTransid)
                     throw new ArgumentException("Wrong transaction id.", "dwTransid");
 
+                Log.DebugFormat("Write complete for transaction {0} with {1} results", dwTransid, dwCount);
                 request.OnWriteComplete(dwTransid, hGroup, hrMastererr, dwCount, pClienthandles, pErrors);
+                Log.TraceFormat("Write complete processing finished for transaction {0}", dwTransid);
             }
             catch (Exception ex)
             {
