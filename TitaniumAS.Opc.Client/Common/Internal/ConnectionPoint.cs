@@ -50,9 +50,13 @@ namespace TitaniumAS.Opc.Client.Common.Internal
             {
                 Connect(comServer);
             }
+            catch (InvalidCastException)
+            {
+                Log.TraceFormat("Server does not support '{0}' connection point. This is optional and the connection will continue.", typeof(T).Name);
+            }
             catch (Exception ex)
             {
-                Log.ErrorFormat("Failed to connect to '{0}' connection point.", ex, typeof (T).Name);
+                Log.WarnFormat("Failed to connect to '{0}' connection point: {1}", typeof(T).Name, ex.Message);
             }
         }
 
@@ -62,7 +66,16 @@ namespace TitaniumAS.Opc.Client.Common.Internal
             if (IsConnected)
                 throw new InvalidOperationException("Already attached to the connection point.");
 
-            var connectionPointContainer = (IConnectionPointContainer) comServer;
+            IConnectionPointContainer connectionPointContainer;
+            try
+            {
+                connectionPointContainer = (IConnectionPointContainer) comServer;
+            }
+            catch (InvalidCastException)
+            {
+                Log.TraceFormat("Server does not support IConnectionPointContainer interface. Connection point '{0}' will not be available.", typeof(T).Name);
+                throw;
+            }
 
             var riid = typeof (T).GUID;
             connectionPointContainer.FindConnectionPoint(ref riid, out _connectionPoint);

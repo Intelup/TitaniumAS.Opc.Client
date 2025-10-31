@@ -133,12 +133,27 @@ namespace TitaniumAS.Opc.Client.Da
       Log.InfoFormat("OPC Server connection established: {0} | Client: {1}", Uri, _clientName);
       try
       {
-        ClientName = _clientName;
-        Log.DebugFormat("Client name set to: {0}", _clientName);
+        var opcCommon = TryAs<OpcCommon>();
+        if (opcCommon != null)
+        {
+          try
+          {
+            opcCommon.ClientName = _clientName;
+            Log.DebugFormat("Client name set to: {0}", _clientName);
+          }
+          catch (Exception ex)
+          {
+            Log.TraceFormat("Cannot setup name of client on server '{0}': {1}", Uri, ex.Message);
+          }
+        }
+        else
+        {
+          Log.TraceFormat("OPC server '{0}' does not support IOPCCommon interface. Client name will not be set.", Uri);
+        }
       }
       catch (Exception ex)
       {
-        Log.Warn("Cannot setup name of client.", ex);
+        Log.TraceFormat("Failed to check IOPCCommon support on server '{0}': {1}", Uri, ex.Message);
       }
       OnConnectionStateChanged(true);
       Log.DebugFormat("Connection state changed event fired for server: {0}", Uri);
@@ -259,7 +274,25 @@ namespace TitaniumAS.Opc.Client.Da
         _clientName = value;
         if (IsConnected)
         {
-          As<OpcCommon>().ClientName = value;
+          try
+          {
+            var opcCommon = TryAs<OpcCommon>();
+            if (opcCommon != null)
+            {
+              try
+              {
+                opcCommon.ClientName = value;
+              }
+              catch (Exception ex)
+              {
+                Log.TraceFormat("Failed to set ClientName to '{0}' on server '{1}': {2}", value, Uri, ex.Message);
+              }
+            }
+          }
+          catch (Exception ex)
+          {
+            Log.TraceFormat("Failed to check IOPCCommon support when setting ClientName on server '{0}': {1}", Uri, ex.Message);
+          }
         }
       }
     }
@@ -509,6 +542,28 @@ namespace TitaniumAS.Opc.Client.Da
     public bool Is<T>() where T : ComWrapper
     {
       return As<T>() != null;
+    }
+
+    /// <summary>
+    ///     Tries to cast this instance to specified COM wrapper type without throwing exception.
+    /// </summary>
+    /// <typeparam name="T">The COM wrapper type.</typeparam>
+    /// <returns>The wrapped instance or null if the interface is not supported.</returns>
+    public T TryAs<T>() where T : ComWrapper
+    {
+      try
+      {
+        if (ComObject == null)
+        {
+          return default(T);
+        }
+
+        return (T)Activator.CreateInstance(typeof(T), ComObject, this);
+      }
+      catch (Exception)
+      {
+        return default(T);
+      }
     }
 
     private void RemoveAllGroups(bool rpcFailed = false)
