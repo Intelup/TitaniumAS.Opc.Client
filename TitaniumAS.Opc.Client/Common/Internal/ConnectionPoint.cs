@@ -18,10 +18,8 @@ namespace TitaniumAS.Opc.Client.Common.Internal
             _sink = sink;
         }
 
-        public bool IsConnected
-        {
-            get { return _connectionPoint != null && _cookie != null; }
-        }
+        public bool IsConnected => this._connectionPoint != null && this._cookie.HasValue;
+
 
         public T Sink
         {

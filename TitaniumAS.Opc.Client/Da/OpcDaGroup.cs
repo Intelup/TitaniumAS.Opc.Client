@@ -511,12 +511,12 @@ namespace TitaniumAS.Opc.Client.Da
             CheckSupported(OpcDaGroupFeatures.Read);
             int[] serverHandles = ArrayHelpers.GetServerHandles(items);
 
-            HRESULT[] ppErrors;
-            OPCITEMSTATE[] ppItemValues = As<OpcSyncIO>().Read((OPCDATASOURCE) dataSource, serverHandles, out ppErrors);
-            OpcDaItemValue[] result = OpcDaItemValue.Create(this, ppItemValues, ppErrors);
-            Log.TraceFormat("Sync read completed for group '{0}' - {1} values returned", Name, result.Length);
-            OnValuesChanged(new OpcDaItemValuesChangedEventArgs(result));
-            return result;
+            HRESULT[] errors;
+            OpcDaItemValue[] values = OpcDaItemValue.Create(this, this.As<OpcSyncIO>().Read((OPCDATASOURCE)dataSource, serverHandles, out errors), errors);
+            this.OnValuesChanged(new OpcDaItemValuesChangedEventArgs(values));
+            Log.TraceFormat("Sync read completed for group '{0}' - {1} values returned", Name, values.Length);
+            OnValuesChanged(new OpcDaItemValuesChangedEventArgs(values));
+            return values;
         }
 
         /// <summary>
@@ -864,8 +864,7 @@ namespace TitaniumAS.Opc.Client.Da
         public void SetState(OpcDaGroupState state)
         {
             int localeId = CultureHelper.GetLocaleId(state.Culture);
-            TimeSpan updateRate = As<OpcGroupStateMgt>().SetState(state.UpdateRate, state.IsActive, state.TimeBias,
-                state.PercentDeadband, localeId, state.ClientHandle);
+            TimeSpan updateRate = As<OpcGroupStateMgt>().SetState(state.UpdateRate, state.IsActive, state.TimeBias, state.PercentDeadband, localeId, state.ClientHandle);
 
             if (state.UpdateRate.HasValue)
             {

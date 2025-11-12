@@ -16,6 +16,7 @@ using TitaniumAS.Opc.Client.Interop.Helpers;
 using TitaniumAS.Opc.Client.Interop.System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace TitaniumAS.Opc.Client.Da
 {
@@ -43,11 +44,11 @@ namespace TitaniumAS.Opc.Client.Da
       Uri = uri;
       ComProxyBlanket = comProxyBlanket ?? ComProxyBlanket.Default;
 
-      var shutdown = new OpcShutdown();
-      shutdown.Shutdown += OnShutdown;
-      ComWrapper.RpcFailed += OnRpcFailed;
+      OpcShutdown sink = new OpcShutdown();
+      sink.Shutdown += new EventHandler<OpcShutdownEventArgs>(this.OnShutdown);
+      ComWrapper.RpcFailed += new EventHandler<RpcFailedEventArgs>(this.OnRpcFailed);
 
-      _shutdownConnectionPoint = new ConnectionPoint<IOPCShutdown>(shutdown);
+      _shutdownConnectionPoint = new ConnectionPoint<IOPCShutdown>((IOPCShutdown) sink);
       _clientName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
     }
 
@@ -414,17 +415,14 @@ namespace TitaniumAS.Opc.Client.Da
         if (state == null)
           state = new OpcDaGroupState();
 
-        int serverGroupHandle;
-        TimeSpan revisedUpdateRate;
         int localeId = CultureHelper.GetLocaleId(state.Culture);
-
         object opcDaGroup = As<OpcServer>().AddGroup(name,
             state.IsActive.GetValueOrDefault(false),
             state.UpdateRate.GetValueOrDefault(TimeSpan.FromSeconds(1)),
             state.ClientHandle.GetValueOrDefault(0),
             state.TimeBias,
             state.PercentDeadband,
-            localeId, out serverGroupHandle, out revisedUpdateRate);
+            localeId, out _, out _);
 
         OpcDaGroup @group = CreateGroupWrapper(opcDaGroup);
         @group.UserData = state.UserData;
@@ -523,6 +521,8 @@ namespace TitaniumAS.Opc.Client.Da
       {
         if (ComObject == null)
         {
+          var errorMsg = string.Format("ComObject is null for server '{0}' when trying to create {1}", Uri, typeof(T).Name);
+          Log.Error(errorMsg);
           return default(T);
         }
 
@@ -530,7 +530,9 @@ namespace TitaniumAS.Opc.Client.Da
       }
       catch (Exception ex)
       {
-        throw new Exception("Failed to create instance of " + typeof(T).Name + ".", ex);
+        var errorMsg = string.Format("Failed to create instance of {0} for server '{1}': {2}", typeof(T).Name, Uri, ex.Message);
+        Log.Error(errorMsg, ex);
+        throw new Exception(errorMsg, ex);
       }
     }
 
@@ -659,15 +661,17 @@ namespace TitaniumAS.Opc.Client.Da
 
     protected virtual void OnShutdown(OpcShutdownEventArgs args)
     {
-      EventHandler<OpcShutdownEventArgs> handler = Shutdown;
-      if (handler != null) handler(this, args);
+        EventHandler<OpcShutdownEventArgs> shutdown = Shutdown;
+        if (shutdown == null)
+          return;
+        shutdown((object) this, args);
     }
 
     internal OpcDaGroup CreateGroupWrapper(object opcDaGroup)
     {
-      var group = new OpcDaGroup(opcDaGroup, this);
-      _groups.Add(group);
-      return group;
+      OpcDaGroup groupWrapper = new OpcDaGroup(opcDaGroup, this);
+      _groups.Add(groupWrapper);
+      return groupWrapper;
     }
 
     protected virtual void OnConnectionStateChanged(bool isConnected)
