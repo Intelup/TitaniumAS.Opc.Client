@@ -35,6 +35,8 @@ namespace TitaniumAS.Opc.Client.Logging
         public IVariablesContext GlobalVariablesContext => new EmptyVariablesContext();
         public IVariablesContext ThreadVariablesContext => new EmptyVariablesContext();
 
+        public INestedVariablesContext NestedThreadVariablesContext => throw new NotImplementedException();
+
         public void Trace(object message)
         {
             LogMessage("TRACE", message?.ToString());
