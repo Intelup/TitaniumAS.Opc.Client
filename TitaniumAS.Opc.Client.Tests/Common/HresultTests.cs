@@ -23,17 +23,17 @@ namespace TitaniumAS.Opc.Client.Tests.Common
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentOutOfRangeException))]
         public void It_Should_Throw_Argument_Out_Of_Range_Exception_When_A_Code_Less_Than_0x0200()
         {
-            HRESULT.AddItfError(0x01FF, "My error");
+            Assert.Throws<ArgumentOutOfRangeException>(
+            () => HRESULT.AddItfError(0x01FF, "My error"));
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentOutOfRangeException))]
         public void It_Should_Throw_Argument_Out_Of_Range_Exception_When_A_Code_Greater_Than_0xFFFF()
         {
-            HRESULT.AddItfError(0x10000, "My error");
+            Assert.Throws<ArgumentOutOfRangeException>(
+            () => HRESULT.AddItfError(0x10000, "My error"));
         }
     }
 }

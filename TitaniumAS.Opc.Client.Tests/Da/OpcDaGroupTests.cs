@@ -446,7 +446,7 @@ namespace TitaniumAS.Opc.Client.Tests.Da
             var task = g1.ReadAsync(g1.Items, cts.Token);
 
             Action act = () => task.Wait();
-            act.ShouldThrow<AggregateException>();
+            act.Invoking(a => a()).Should().Throw<AggregateException>();
         }
 
         [TestMethod]
@@ -499,7 +499,7 @@ namespace TitaniumAS.Opc.Client.Tests.Da
             var task = g1.RefreshAsync(OpcDaDataSource.Device, cts.Token);
 
             Action act = () => task.Wait();
-            act.ShouldThrow<AggregateException>();
+            act.Invoking(a => a()).Should().Throw<AggregateException>();
         }
 
         [TestMethod]
@@ -549,7 +549,7 @@ namespace TitaniumAS.Opc.Client.Tests.Da
             var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
             var task = g1.WriteAsync(g1.Items, new object[] {1, 2.0}, cts.Token);
             Action act = () => task.Wait();
-            act.ShouldThrow<AggregateException>();
+            act.Invoking(a => a()).Should().Throw<AggregateException>();
         }
 
         [TestMethod]
@@ -599,7 +599,7 @@ namespace TitaniumAS.Opc.Client.Tests.Da
             cts.Cancel();
             var task = g1.ReadMaxAgeAsync(g1.Items, null, cts.Token);
             Action act = task.Wait;
-            act.ShouldThrow<AggregateException>();
+            act.Invoking(a => a()).Should().Throw<AggregateException>();
         }
 
         [TestMethod]
@@ -652,7 +652,7 @@ namespace TitaniumAS.Opc.Client.Tests.Da
             var task = g1.RefreshMaxAgeAsync(TimeSpan.Zero, cts.Token);
 
             Action act = task.Wait;
-            act.ShouldThrow<AggregateException>();
+            act.Invoking(a => a()).Should().Throw<AggregateException>();
         }
 
         [TestMethod]
@@ -727,7 +727,7 @@ namespace TitaniumAS.Opc.Client.Tests.Da
             cts.Cancel();
             var task = g1.WriteVQTAsync(g1.Items, opcItemValues, cts.Token);
             Action act = task.Wait;
-            act.ShouldThrow<AggregateException>();
+            act.Invoking(a => a()).Should().Throw<AggregateException>();
         }
 
         [TestMethod]
