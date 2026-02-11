@@ -946,7 +946,12 @@ namespace TitaniumAS.Opc.Client.Da
                 }
                 else
                 {
-                    results[index] = new OpcDaItemResult(null, error);
+                    // Create a lightweight item for diagnostics (e.g., ItemId) even when add fails.
+                    var placeholder = new OpcDaItem(opcItemDefinition, new OPCITEMRESULT(), null)
+                    {
+                        UserData = opcItemDefinition.UserData
+                    };
+                    results[index] = new OpcDaItemResult(placeholder, error);
                 }
             }
             return results;

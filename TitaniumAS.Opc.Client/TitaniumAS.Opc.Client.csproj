@@ -7,6 +7,7 @@
     <AssemblyName>TitaniumAS.Opc.Client</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateAppConfigFile>false</GenerateAppConfigFile>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -43,10 +44,7 @@
     <Reference Include="System.Web" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="app.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
+  <Target Name="DeleteExeConfig" AfterTargets="Build">
+    <Delete Files="$(TargetDir)$(TargetFileName).config" Condition="Exists('$(TargetDir)$(TargetFileName).config')" />
+  </Target>
 </Project>
