@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Common.Logging;
+using TitaniumAS.Opc.Client.Common;
 using TitaniumAS.Opc.Client.Da.Browsing.Internal;
 using TitaniumAS.Opc.Client.Da.Wrappers;
 using TitaniumAS.Opc.Client.Interop.Da;
@@ -20,6 +21,10 @@ namespace TitaniumAS.Opc.Client.Da.Browsing
         private OpcDaServer _opcDaServer;
         protected OpcBrowseServerAddressSpace OpcBrowseServerAddressSpace { get; set; }
         private OpcItemProperties OpcItemProperties { get; set; }
+        private readonly Dictionary<string, string[]> _itemIdToPath = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string[]> _nameToPath = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        private string[] _currentPath = Array.Empty<string>();
+        private bool _targetIsLeaf;
 
         /// <summary>
         /// Gets or sets the OPC DA server for browsing.
@@ -40,9 +45,13 @@ namespace TitaniumAS.Opc.Client.Da.Browsing
                 }
                 else
                 {
-                    OpcBrowseServerAddressSpace = _opcDaServer.As<OpcBrowseServerAddressSpace>();
-                    OpcItemProperties = _opcDaServer.As<OpcItemProperties>();
+                    OpcBrowseServerAddressSpace = _opcDaServer.TryAs<OpcBrowseServerAddressSpace>();
+                    OpcItemProperties = _opcDaServer.TryAs<OpcItemProperties>();
                 }
+
+                _itemIdToPath.Clear();
+                _nameToPath.Clear();
+                _currentPath = Array.Empty<string>();
             }
         }
 
@@ -155,6 +164,11 @@ namespace TitaniumAS.Opc.Client.Da.Browsing
                 case OpcDaNamespaceType.Hierarchial:
                     ChangeBrowsePositionTo(itemId);
 
+                    if (_targetIsLeaf)
+                    {
+                        return Array.Empty<OpcDaBrowseElement>();
+                    }
+
                     switch (filter.ElementType)
                     {
                         case OpcDaBrowseFilter.All:
@@ -205,28 +219,358 @@ namespace TitaniumAS.Opc.Client.Da.Browsing
 
         protected virtual void ChangeBrowsePositionTo(string itemId)
         {
+            _targetIsLeaf = false;
+            if (string.IsNullOrEmpty(itemId))
+            {
+                TryMoveToRoot();
+                _currentPath = Array.Empty<string>();
+                return;
+            }
+
+            if (_itemIdToPath.TryGetValue(itemId, out string[] path))
+            {
+                MoveToPath(path);
+                _currentPath = path;
+                return;
+            }
+
+            if (_nameToPath.TryGetValue(itemId, out path))
+            {
+                MoveToPath(path);
+                _currentPath = path;
+                return;
+            }
+
+            if (TryFindPathByItemId(itemId, out path, out bool isLeaf))
+            {
+                _targetIsLeaf = isLeaf;
+                return;
+            }
+
+            string derivedName = ExtractBrowseName(itemId);
+            if (!string.Equals(derivedName, itemId, StringComparison.Ordinal))
+            {
+                try
+                {
+                    OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_TO, derivedName);
+                    _currentPath = new[] { derivedName };
+                    return;
+                }
+                catch (ArgumentException)
+                {
+                }
+            }
+
             OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_TO, itemId);
+        }
+
+        private static string ExtractBrowseName(string itemId)
+        {
+            if (string.IsNullOrEmpty(itemId))
+            {
+                return itemId;
+            }
+
+            int bracketIndex = itemId.LastIndexOf(']');
+            if (bracketIndex >= 0 && bracketIndex + 1 < itemId.Length)
+            {
+                return itemId.Substring(bracketIndex + 1);
+            }
+
+            return itemId;
+        }
+
+        private static bool TryParseBrowsePath(string itemId, out string[] path)
+        {
+            path = Array.Empty<string>();
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return false;
+            }
+
+            if (itemId[0] != '[')
+            {
+                return false;
+            }
+
+            int bracketIndex = itemId.IndexOf(']');
+            if (bracketIndex <= 1)
+            {
+                return false;
+            }
+
+            string root = itemId.Substring(1, bracketIndex - 1);
+            string remainder = bracketIndex + 1 < itemId.Length
+                ? itemId.Substring(bracketIndex + 1)
+                : string.Empty;
+
+            remainder = remainder.TrimStart('.', '\\', '/');
+
+            var segments = new List<string>();
+            if (!string.IsNullOrWhiteSpace(root))
+            {
+                segments.Add(root);
+            }
+
+            if (!string.IsNullOrWhiteSpace(remainder))
+            {
+                foreach (string segment in remainder.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    segments.Add(segment);
+                }
+            }
+
+            if (segments.Count == 0)
+            {
+                return false;
+            }
+
+            path = segments.ToArray();
+            return true;
+        }
+
+        private void TryMoveToRoot()
+        {
+            try
+            {
+                OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_TO, string.Empty);
+                return;
+            }
+            catch (ArgumentException)
+            {
+            }
+
+            const int maxDepth = 1000;
+            for (int i = 0; i < maxDepth; i++)
+            {
+                try
+                {
+                    OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_UP);
+                }
+                catch (COMException ex)
+                {
+                    if (ex.ErrorCode == HRESULT.E_FAIL)
+                    {
+                        return;
+                    }
+                    throw;
+                }
+            }
+        }
+
+        private void MoveToPath(string[] path)
+        {
+            try
+            {
+                _targetIsLeaf = false;
+                int commonLength = 0;
+                int maxCommon = Math.Min(_currentPath.Length, path.Length);
+                while (commonLength < maxCommon &&
+                       string.Equals(_currentPath[commonLength], path[commonLength], StringComparison.OrdinalIgnoreCase))
+                {
+                    commonLength++;
+                }
+
+                for (int i = _currentPath.Length - 1; i >= commonLength; i--)
+                {
+                    OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_UP);
+                }
+
+                for (int i = commonLength; i < path.Length; i++)
+                {
+                    OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_DOWN, path[i]);
+                }
+            }
+            catch (Exception)
+            {
+                TryMoveToRoot();
+                foreach (string segment in path)
+                {
+                    OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_DOWN, segment);
+                }
+            }
+        }
+
+        private void MoveToPathValidated(string originalPath, string[] path)
+        {
+            TryMoveToRoot();
+            _currentPath = Array.Empty<string>();
+            _targetIsLeaf = false;
+
+            for (int i = 0; i < path.Length; i++)
+            {
+                string segment = path[i];
+                bool isLast = i == path.Length - 1;
+                if (!TryResolveSegment(segment, out bool isLeaf))
+                {
+                    throw new InvalidOperationException($"Browse path not found: '{originalPath}'.");
+                }
+
+                if (isLeaf)
+                {
+                    if (!isLast)
+                    {
+                        throw new InvalidOperationException($"Browse path not found: '{originalPath}'.");
+                    }
+
+                    _targetIsLeaf = true;
+                    return;
+                }
+
+                OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_DOWN, segment);
+                _currentPath = _currentPath.Concat(new[] { segment }).ToArray();
+            }
+        }
+
+        private bool TryFindPathByItemId(string itemId, out string[] path, out bool isLeaf)
+        {
+            path = Array.Empty<string>();
+            isLeaf = false;
+            if (string.IsNullOrWhiteSpace(itemId))
+            {
+                return false;
+            }
+
+            const int maxDepth = 64;
+            const int maxNodes = 20000;
+            int visited = 0;
+
+            TryMoveToRoot();
+            _currentPath = Array.Empty<string>();
+
+            if (TryFindPathByItemIdRecursive(itemId, 0, maxDepth, ref visited, maxNodes, out path, out isLeaf))
+            {
+                _currentPath = path;
+                return true;
+            }
+
+            TryMoveToRoot();
+            _currentPath = Array.Empty<string>();
+            return false;
+        }
+
+        private bool TryFindPathByItemIdRecursive(string targetItemId, int depth, int maxDepth, ref int visited,
+            int maxNodes, out string[] path, out bool isLeaf)
+        {
+            path = Array.Empty<string>();
+            isLeaf = false;
+            if (depth > maxDepth || visited >= maxNodes)
+            {
+                return false;
+            }
+
+            string[] branches = OpcBrowseServerAddressSpace.BrowseOpcItemIds(
+                OpcDaBrowseType.Branch, string.Empty, VarEnum.VT_EMPTY, OpcDaAccessRights.Ignore);
+
+            foreach (string branch in branches)
+            {
+                visited++;
+                string branchItemId = OpcBrowseServerAddressSpace.TryGetItemId(branch);
+                if (!string.IsNullOrEmpty(branchItemId) &&
+                    string.Equals(branchItemId, targetItemId, StringComparison.OrdinalIgnoreCase))
+                {
+                    path = _currentPath.Concat(new[] { branch }).ToArray();
+                    isLeaf = false;
+                    return true;
+                }
+
+                OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_DOWN, branch);
+                _currentPath = _currentPath.Concat(new[] { branch }).ToArray();
+
+                if (TryFindPathByItemIdRecursive(targetItemId, depth + 1, maxDepth, ref visited, maxNodes,
+                        out path, out isLeaf))
+                {
+                    return true;
+                }
+
+                OpcBrowseServerAddressSpace.ChangeBrowsePosition(OPCBROWSEDIRECTION.OPC_BROWSE_UP);
+                _currentPath = _currentPath.Take(_currentPath.Length - 1).ToArray();
+            }
+
+            string[] leaves = OpcBrowseServerAddressSpace.BrowseOpcItemIds(
+                OpcDaBrowseType.Leaf, string.Empty, VarEnum.VT_EMPTY, OpcDaAccessRights.Ignore);
+
+            foreach (string leaf in leaves)
+            {
+                visited++;
+                string leafItemId = OpcBrowseServerAddressSpace.TryGetItemId(leaf);
+                if (!string.IsNullOrEmpty(leafItemId) &&
+                    string.Equals(leafItemId, targetItemId, StringComparison.OrdinalIgnoreCase))
+                {
+                    path = _currentPath.Concat(new[] { leaf }).ToArray();
+                    isLeaf = true;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryResolveSegment(string segment, out bool isLeaf)
+        {
+            isLeaf = false;
+            if (string.IsNullOrWhiteSpace(segment))
+            {
+                return false;
+            }
+
+            string[] branches = OpcBrowseServerAddressSpace.BrowseOpcItemIds(
+                OpcDaBrowseType.Branch, segment, VarEnum.VT_EMPTY, OpcDaAccessRights.Ignore);
+
+            if (branches.Any(b => string.Equals(b, segment, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            string[] leaves = OpcBrowseServerAddressSpace.BrowseOpcItemIds(
+                OpcDaBrowseType.Leaf, segment, VarEnum.VT_EMPTY, OpcDaAccessRights.Ignore);
+
+            if (leaves.Any(l => string.Equals(l, segment, StringComparison.OrdinalIgnoreCase)))
+            {
+                isLeaf = true;
+                return true;
+            }
+
+            return false;
         }
 
         private OpcDaBrowseElement CreateLeafBrowseElement(string name)
         {
+            string fullItemId = OpcBrowseServerAddressSpace.TryGetItemId(name);
+            if (!string.IsNullOrEmpty(fullItemId))
+            {
+                _itemIdToPath[fullItemId] = _currentPath.Concat(new[] { name }).ToArray();
+            }
+
+            _nameToPath[name] = _currentPath.Concat(new[] { name }).ToArray();
+
+            string itemId = fullItemId;
+
             return new OpcDaBrowseElement
             {
                 Name = name,
                 HasChildren = false,
                 IsItem = true,
-                ItemId = OpcBrowseServerAddressSpace.TryGetItemId(name)
+                ItemId = itemId
             };
         }
 
         private OpcDaBrowseElement CreateBranchBrowseElement(string name)
         {
+            string itemId = OpcBrowseServerAddressSpace.TryGetItemId(name);
+            if (!string.IsNullOrEmpty(itemId))
+            {
+                _itemIdToPath[itemId] = _currentPath.Concat(new[] { name }).ToArray();
+            }
+
+            _nameToPath[name] = _currentPath.Concat(new[] { name }).ToArray();
+
             return new OpcDaBrowseElement
             {
                 Name = name,
                 HasChildren = true,
                 IsItem = false,
-                ItemId = OpcBrowseServerAddressSpace.TryGetItemId(name)
+                ItemId = itemId
             };
         }
     }
