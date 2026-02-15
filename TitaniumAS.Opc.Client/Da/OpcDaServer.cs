@@ -408,14 +408,19 @@ namespace TitaniumAS.Opc.Client.Da
     /// </returns>
     public OpcDaGroup AddGroup(string name, OpcDaGroupState state = null)
     {
+      string stage = "start";
       try
       {
+        stage = "CheckConnected";
         CheckConnected();
 
         if (state == null)
           state = new OpcDaGroupState();
 
+        stage = "ResolveLocale";
         int localeId = CultureHelper.GetLocaleId(state.Culture);
+
+        stage = "IOPCServer.AddGroup";
         object opcDaGroup = As<OpcServer>().AddGroup(name,
             state.IsActive.GetValueOrDefault(false),
             state.UpdateRate.GetValueOrDefault(TimeSpan.FromSeconds(1)),
@@ -424,15 +429,33 @@ namespace TitaniumAS.Opc.Client.Da
             state.PercentDeadband,
             localeId, out _, out _);
 
+        stage = "CreateGroupWrapper";
         OpcDaGroup @group = CreateGroupWrapper(opcDaGroup);
+
+        stage = "SetUserData";
         @group.UserData = state.UserData;
 
+        stage = "OnGroupsChanged";
         OnGroupsChanged(new OpcDaServerGroupsChangedEventArgs(group, null));
 
         return @group;
       }
       catch (Exception ex)
       {
+        // This logging was added due to frequent (internal dll) errors, and it will help to investigate those errors to find the root cause.
+        Log.ErrorFormat(
+            "Failed to add group (internal dll). Server: '{0}', Stage: {1}, Name: '{2}', IsConnected: {3}, Active: {4}, UpdateRateMs: {5}, ClientHandle: {6}, TimeBias: {7}, Deadband: {8}, Culture: {9}.",
+            ex,
+            Uri,
+            stage,
+            name ?? "<null>",
+            IsConnected,
+            state != null ? state.IsActive.GetValueOrDefault(false).ToString() : "<null>",
+            state != null ? state.UpdateRate.GetValueOrDefault(TimeSpan.FromSeconds(1)).TotalMilliseconds.ToString(CultureInfo.InvariantCulture) : "<null>",
+            state != null ? state.ClientHandle.GetValueOrDefault(0).ToString(CultureInfo.InvariantCulture) : "<null>",
+            state != null && state.TimeBias.HasValue ? state.TimeBias.Value.ToString() : "<null>",
+            state != null && state.PercentDeadband.HasValue ? state.PercentDeadband.Value.ToString(CultureInfo.InvariantCulture) : "<null>",
+            state != null && state.Culture != null ? state.Culture.Name : "<null>");
         throw new Exception("Failed to add group (internal dll).", ex);
       }
     }
