@@ -11,7 +11,7 @@ namespace TitaniumAS.Opc.Client.Da.Internal.Requests
     internal class WriteAsyncRequest : IAsyncRequest
     {
         private readonly OpcAsyncIO2 _asyncIO2;
-        private readonly TaskCompletionSource<HRESULT[]> _tcs = new TaskCompletionSource<HRESULT[]>();
+        private readonly TaskCompletionSource<HRESULT[]> _tcs = new TaskCompletionSource<HRESULT[]>(TaskCreationOptions.RunContinuationsAsynchronously);
         private AsyncRequestManager _requestManager;
 
         public WriteAsyncRequest(OpcAsyncIO2 asyncIO2)

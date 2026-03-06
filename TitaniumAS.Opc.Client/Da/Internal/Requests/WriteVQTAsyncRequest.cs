@@ -12,7 +12,7 @@ namespace TitaniumAS.Opc.Client.Da.Internal.Requests
     internal class WriteVQTAsyncRequest : IAsyncRequest
     {
         private readonly OpcAsyncIO3 _asyncIO3;
-        private readonly TaskCompletionSource<HRESULT[]> _tcs = new TaskCompletionSource<HRESULT[]>();
+        private readonly TaskCompletionSource<HRESULT[]> _tcs = new TaskCompletionSource<HRESULT[]>(TaskCreationOptions.RunContinuationsAsynchronously);
         private AsyncRequestManager _requestManager;
 
         public WriteVQTAsyncRequest(OpcAsyncIO3 asyncIO3)

@@ -9,7 +9,7 @@ namespace TitaniumAS.Opc.Client.Da.Internal.Requests
     internal class RefreshMaxAgeAsyncRequest : IAsyncRequest
     {
         private readonly OpcAsyncIO3 _asyncIO3;
-        private readonly TaskCompletionSource<OpcDaItemValue[]> _tcs = new TaskCompletionSource<OpcDaItemValue[]>();
+        private readonly TaskCompletionSource<OpcDaItemValue[]> _tcs = new TaskCompletionSource<OpcDaItemValue[]>(TaskCreationOptions.RunContinuationsAsynchronously);
         private AsyncRequestManager _requestManager;
 
         public RefreshMaxAgeAsyncRequest(OpcAsyncIO3 asyncIO3)

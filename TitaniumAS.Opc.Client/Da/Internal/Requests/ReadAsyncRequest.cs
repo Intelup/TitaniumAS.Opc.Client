@@ -11,7 +11,7 @@ namespace TitaniumAS.Opc.Client.Da.Internal.Requests
     internal class ReadAsyncRequest : IAsyncRequest
     {
         private readonly OpcAsyncIO2 _asyncIO2;
-        private readonly TaskCompletionSource<OpcDaItemValue[]> _tcs = new TaskCompletionSource<OpcDaItemValue[]>();
+        private readonly TaskCompletionSource<OpcDaItemValue[]> _tcs = new TaskCompletionSource<OpcDaItemValue[]>(TaskCreationOptions.RunContinuationsAsynchronously);
         private AsyncRequestManager _requestManager;
 
         public ReadAsyncRequest(OpcAsyncIO2 asyncIO2)

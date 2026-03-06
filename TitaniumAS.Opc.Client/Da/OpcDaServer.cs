@@ -570,6 +570,19 @@ namespace TitaniumAS.Opc.Client.Da
     }
 
     /// <summary>
+    ///     Determines whether this instance is of specified COM wrapper type.
+    /// </summary>
+    /// <typeparam name="T">The COM wrapper type.</typeparam>
+    /// <param name="value">Casted to type <typeparamref name="T"/> value</param>
+    /// <returns><c>true</c> if this instance is of specified COM wrapper type; otherwise, <c>false</c>.</returns>
+    public bool Is<T>(out T value) where T : ComWrapper
+    {
+      value = As<T>();
+
+      return value != null;
+    }
+
+    /// <summary>
     ///     Tries to cast this instance to specified COM wrapper type without throwing exception.
     /// </summary>
     /// <typeparam name="T">The COM wrapper type.</typeparam>
