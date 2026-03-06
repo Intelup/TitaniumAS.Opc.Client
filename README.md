@@ -1,30 +1,26 @@
 # TitaniumAS.Opc.Client
-Open source .NET client library for OPC DA. The library provides you with .NET COM wrappers for OPC DA interoperability.
+
+> **Note:** This is a customized fork of the original [TitaniumAS.Opc.Client](https://github.com/titanium-as/TitaniumAS.Opc.Client) library, maintained as an internal component of the CollectorTunnel project. It is not distributed as a standalone package.
+
+.NET client library for OPC DA (Data Access). Provides COM interop wrappers for connecting to and communicating with OPC DA servers.
 
 ## Features
-- Support of local and network OPC DA servers.
-- Support of OPC DA 1.0, 2.05A, 3.0.
-- Browsing of OPC DA servers.
-- Async/await in read and write operations.
+
+- Support for local and network OPC DA servers.
+- Support for OPC DA 1.0, 2.05A, and 3.0.
+- Browsing of OPC DA server address spaces.
+- Async/await support for read and write operations.
 - Subscription to data changes via .NET events.
-- Support of server shutdown events.
-- Easy resource management.
+- Server shutdown event handling.
 
-## Installation
-Run the following command in the NuGet Package Manager console:
-```
-PM> Install-Package TitaniumAS.Opc.Client
-```
-See [NuGet package](https://www.nuget.org/packages/TitaniumAS.Opc.Client).
+## Build
 
-## Basic usage
-The following examples cover basic usages of the library. Assume you have an application with installed NuGet package of the library.
+This library is compiled as part of the CollectorTunnel solution targeting **.NET Framework 4.8**. It is referenced directly as a project dependency — no package restore is required.
 
-#### Bootstrapping the library
-Call `Bootstrap.Initialize()` in the start of your application. An application process should be started under MTA apartment state due to [CoInitializeSecurity](http://www.pinvoke.net/default.aspx/ole32/CoInitializeSecurity.html) call during the library initialization. See [explanation](http://www.pinvoke.net/default.aspx/ole32/CoInitializeSecurity.html).
+## Usage
 
-#### Connecting to an OPC DA server
-You should create OPC DA server instance first and then connect to it.
+### Connecting to an OPC DA Server
+
 ```csharp
 // Make an URL of OPC DA server using builder.
 Uri url = UrlBuilder.Build("Matrikon.OPC.Simulation.1");
@@ -36,8 +32,8 @@ using (var server = new OpcDaServer(url))
 }
 ```
 
-#### Browsing elements
-You can browse all elements of any OPC DA servers versions with `OpcDaBrowserAuto`.
+### Browsing Elements
+
 ```csharp
 // Create a browser and browse all elements recursively.
 var browser = new OpcDaBrowserAuto(server);
@@ -66,8 +62,8 @@ void BrowseChildren(IOpcDaBrowser browser, string itemId = null, int indent = 0)
 }
 ```
 
-#### Creating a group with items
-You can add a group with items to the OPC DA server. 
+### Creating a Group with Items
+
 ```csharp
 // Create a group with items.
 OpcDaGroup group = server.AddGroup("MyGroup");
@@ -95,8 +91,8 @@ foreach (OpcDaItemResult result in results)
 ...
 ```
 
-#### Reading values
-Items of a group can be read either synchronously or asynchronously.
+### Reading Values
+
 ```csharp
 // Read all items of the group synchronously.
 OpcDaItemValue[] values = group.Read(group.Items, OpcDaDataSource.Device);
@@ -107,8 +103,8 @@ OpcDaItemValue[] values = await group.ReadAsync(group.Items);
 ...
 ```
 
-#### Writing values
-Also items of a group can be written either synchronously or asynchronously.
+### Writing Values
+
 ```csharp
 // Prepare items.
 OpcDaItem int2 = group.Items.FirstOrDefault(i => i.ItemId == "Bucket Brigade.Int2");
@@ -126,8 +122,8 @@ HRESULT[] results = await group.WriteAsync(items, values);
 ...
 ```
 
-#### Getting values by subscription
-A group can be configured for providing a client with new values when they are changed.
+### Subscribing to Value Changes
+
 ```csharp
 // Configure subscription.
 group.ValuesChanged += OnGroupValuesChanged;
@@ -144,14 +140,3 @@ static void OnGroupValuesChanged(object sender, OpcDaItemValuesChangedEventArgs 
     }
 }
 ```
-
-## Troubleshooting
-* Check Opc Core Components (https://opcfoundation.org/developer-tools/developer-kits-classic/core-components) installed on your system first. It is possible you have not installed OPCEnum service.
-* To run unit tests in NUnit, it should be configured with x86 envirenment.
-* In Visual Studio, set your project to use "Prefer 32-bit". Project Properties → Build → "Prefer 32-bit" in Platform target. The code should be compiled as 32-bit.
-
-## API documentation
-Comming soon...
-
-##License
-The MIT License (MIT) – [LICENSE](https://github.com/titanium-as/TitaniumAS.Opc.Client/blob/master/LICENSE).

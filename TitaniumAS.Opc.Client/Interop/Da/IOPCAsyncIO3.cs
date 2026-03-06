@@ -11,7 +11,7 @@ namespace TitaniumAS.Opc.Client.Interop.Da
     internal interface IOPCAsyncIO3 : IOPCAsyncIO2
     {
         [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-        void Read(
+        new void Read(
             [In] int dwCount,
             [MarshalAs(UnmanagedType.LPArray), In] int[] phServer,
             [In] int dwTransactionID,
@@ -20,7 +20,7 @@ namespace TitaniumAS.Opc.Client.Interop.Da
                 HRESULT[] ppErrors);
 
         [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-        void Write(
+        new void Write(
             [In] int dwCount,
             [MarshalAs(UnmanagedType.LPArray), In] int[] phServer,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Struct), In] object[] pItemValues,
@@ -29,10 +29,10 @@ namespace TitaniumAS.Opc.Client.Interop.Da
                 HRESULT[] ppErrors);
 
         [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-        void Refresh2([In] OPCDATASOURCE dwSource, [In] int dwTransactionID, out int pdwCancelID);
+        new void Refresh2([In] OPCDATASOURCE dwSource, [In] int dwTransactionID, out int pdwCancelID);
 
         [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-        void Cancel2([In] int dwCancelID);
+        new void Cancel2([In] int dwCancelID);
 
         [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
         void SetEnable([In] int bEnable);

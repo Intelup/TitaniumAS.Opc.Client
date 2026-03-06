@@ -11,7 +11,7 @@ namespace TitaniumAS.Opc.Client.Interop.Da
     internal interface IOPCSyncIO2 : IOPCSyncIO
     {
         [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-        void Read(
+        new void Read(
             [In] OPCDATASOURCE dwSource,
             [In] int dwCount,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), In] int[] phServer,
@@ -21,7 +21,7 @@ namespace TitaniumAS.Opc.Client.Interop.Da
                 HRESULT[] ppErrors);
 
         [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-        void Write(
+        new void Write(
             [In] int dwCount,
             [MarshalAs(UnmanagedType.LPArray), In] int[] phServer,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Struct), In] object[] pItemValues,

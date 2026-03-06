@@ -23,13 +23,13 @@ namespace TitaniumAS.Opc.Client.Da.Wrappers
             out HRESULT[] errors)
         {
             throw new NotImplementedException();
-            int[] pdwRequestedSamplingRate = ArrayHelpers.CreateMaxAgeArray(requestedSamplingRate,
-                requestedSamplingRate.Length);
-            IntPtr ppdwRevisedSamplingRate;
-            IntPtr ppErrors;
-            ComObject.SetItemSamplingRate(serverHandles.Length, serverHandles, pdwRequestedSamplingRate,
-                out ppdwRevisedSamplingRate, out ppErrors);
-            return null;
+            // int[] pdwRequestedSamplingRate = ArrayHelpers.CreateMaxAgeArray(requestedSamplingRate,
+            //     requestedSamplingRate.Length);
+            // IntPtr ppdwRevisedSamplingRate;
+            // IntPtr ppErrors;
+            // ComObject.SetItemSamplingRate(serverHandles.Length, serverHandles, pdwRequestedSamplingRate,
+            //     out ppdwRevisedSamplingRate, out ppErrors);
+            // return null;
         }
 
         public TimeSpan[] GetItemSamplingRate(

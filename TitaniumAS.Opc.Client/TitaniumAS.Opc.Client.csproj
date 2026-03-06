@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
+    <langversion>10.0</langversion>
     <ProjectGuid>{0F7347F4-79F1-4C63-8C75-60F8D1A7E950}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>TitaniumAS.Opc.Client</RootNamespace>

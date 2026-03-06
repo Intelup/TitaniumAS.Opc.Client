@@ -11,7 +11,7 @@ namespace TitaniumAS.Opc.Client.Da.Browsing.Internal
             {
                 return opcBrowseServerAddressSpace.GetItemId(itemName);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }

@@ -9,7 +9,7 @@ namespace TitaniumAS.Opc.Client.Interop.Da
     [ComImport]
     internal interface IOPCGroupStateMgt2 : IOPCGroupStateMgt
     {
-        void GetState(
+        new void GetState(
             out int pUpdateRate,
             [MarshalAs(UnmanagedType.Bool)] out bool pActive,
             [MarshalAs(UnmanagedType.LPWStr)] out string ppName,
@@ -27,9 +27,9 @@ namespace TitaniumAS.Opc.Client.Interop.Da
             [MarshalAs(UnmanagedType.LPArray, SizeConst = 1), In] int[] pLCID,
             [MarshalAs(UnmanagedType.LPArray, SizeConst = 1), In] int[] phClientGroup);
 
-        void SetName([MarshalAs(UnmanagedType.LPWStr), In] string szName);
+        new void SetName([MarshalAs(UnmanagedType.LPWStr), In] string szName);
 
-        void CloneGroup([MarshalAs(UnmanagedType.LPWStr), In] string szName, [In] ref Guid riid,
+        new void CloneGroup([MarshalAs(UnmanagedType.LPWStr), In] string szName, [In] ref Guid riid,
             [MarshalAs(UnmanagedType.IUnknown)] out object ppUnk);
 
         [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]

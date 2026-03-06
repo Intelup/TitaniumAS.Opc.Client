@@ -101,7 +101,7 @@ namespace TitaniumAS.Opc.Client.Da.Wrappers
                             dwPropertyCount, pdwPropertyIDs);
                         ReadBrowseElementsAndDealocate(ref browseElements, pdwCount, elements);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         break; // stop browsing.
                     }

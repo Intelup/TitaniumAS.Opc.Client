@@ -17,7 +17,7 @@ namespace TitaniumAS.Opc.Client.Da.Browsing
     /// <seealso cref="TitaniumAS.Opc.Da.Browsing.IOpcDaBrowser" />
     public class OpcDaBrowser2 : IOpcDaBrowser
     {
-        private static readonly ILog Log = LogManager.GetCurrentClassLogger();
+        private static readonly ILog Log = LogManager.GetLogger<OpcDaBrowser2>();
         private OpcDaServer _opcDaServer;
         protected OpcBrowseServerAddressSpace OpcBrowseServerAddressSpace { get; set; }
         private OpcItemProperties OpcItemProperties { get; set; }

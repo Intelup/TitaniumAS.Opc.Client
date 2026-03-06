@@ -137,12 +137,14 @@ namespace TitaniumAS.Opc.Client.Interop.Common
             [MarshalAs(UnmanagedType.LPWStr)] public readonly string sv100_name;
         }
 
-        private struct SOLE_AUTHENTICATION_SERVICE
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SOLE_AUTHENTICATION_SERVICE
         {
-            public int dwAuthnSvc;
-            public int dwAuthzSvc;
-            public int hr;
-            [MarshalAs(UnmanagedType.BStr)] public string pPrincipalName;
+            public uint dwAuthnSvc; // Authentication service
+            public uint dwAuthzSvc; // Authorization service
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string pPrincipalName; // Server principal name
+            public int hr; // Result of authentication
         }
 
         [DllImport("ole32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
